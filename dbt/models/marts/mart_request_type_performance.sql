@@ -2,10 +2,8 @@
 with w as (select * from {{ ref('int_311__kpi_window') }}),
 
 requests as (
-    select r.*, t.request_type, t.owner_department_name
-    from {{ ref('fct_service_requests') }} as r
-    join {{ ref('dim_request_type') }} as t using (request_type_key)
-    where r.is_counted and not r.is_canceled
+    select * from {{ ref('int_311__service_work') }}
+    where not is_canceled
 )
 
 select

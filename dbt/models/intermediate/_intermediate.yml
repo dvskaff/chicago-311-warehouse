@@ -9,6 +9,14 @@ models:
       - name: hours_to_close
         data_tests: [not_negative]
 
+  - name: int_311__service_work
+    description: >
+      Requests that performance metrics are about: counted (not duplicates) and not of a request type the city
+      closes on receipt. Every KPI mart reads from this view.
+    columns:
+      - name: sr_number
+        data_tests: [unique, not_null]
+
 unit_tests:
   - name: int_closure_logic
     description: >

@@ -22,9 +22,11 @@ It is rebuilt every day by GitHub Actions; the public dashboard is at
   from durations and monitored by a data test.
 * **Counted request**: not marked as a duplicate of another request. Canceled requests leave the backlog but are not
   used for resolution-time metrics.
+* **Closed on receipt**: request types whose median time to close is under an hour (for example complaints that are
+  only logged). They count toward volume but are excluded from timing and backlog metrics (`int_311__service_work`).
 * **Reporting window**: the 365 days ending 7 days before the latest data, so every request has had a week to close.
-* **Service index**: geometric mean of (time to close / citywide median for the same request type) per community
-  area. 1.00 = typical.
+* **Service index**: median of (time to close / citywide median for the same request type) per community area.
+  1.00 = typical for the same work.
 
 Use the lineage button (bottom right) to explore how every model depends on the others.
 {% enddocs %}

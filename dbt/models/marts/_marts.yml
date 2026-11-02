@@ -106,10 +106,14 @@ models:
       - {name: department_name, data_tests: [unique, not_null]}
 
   - name: dim_request_type
-    description: 311 request types and the department that owns most of them.
+    description: >
+      311 request types, the department that owns most of them, and whether the city closes them on receipt
+      (median time to close under an hour, e.g. complaints that are only logged). Those types count toward volume
+      but are excluded from timing and backlog metrics.
     columns:
       - {name: request_type_key, data_tests: [unique, not_null]}
       - {name: request_type, data_tests: [unique, not_null]}
+      - {name: is_closed_on_receipt, data_tests: [not_null]}
 
   - name: dim_community_area
     description: Chicago's 77 community areas.
@@ -140,8 +144,8 @@ models:
 
   - name: mart_community_area_service_index
     description: >
-      Type-adjusted service speed per community area: geometric mean of (time to close / citywide median for the
-      same request type). 1.00 = typical; above 1 = slower than typical for the same work.
+      Type-adjusted service speed per community area: median of (time to close / citywide median for the same
+      request type). 1.00 = typical; above 1 = slower than typical for the same work.
     columns:
       - {name: community_area_id, data_tests: [unique, not_null]}
       - name: service_index
@@ -170,3 +174,24 @@ exposures:
       - ref('fct_service_requests')
     owner:
       name: David Skaff
+
+unit_tests:
+  - name: dim_flags_types_closed_on_receipt
+    description: >
+      A type whose median closure is under an hour is flagged as closed on receipt; canceled and duplicate
+      requests do not affect the decision.
+    model: dim_request_type
+    given:
+      - input: ref('int_311__requests_enriched')
+        rows:
+          - {request_type: "Aircraft Noise Complaint", department_name: "Aviation", hours_to_close: 0.01, is_canceled: false, is_counted: true}
+          - {request_type: "Aircraft Noise Complaint", department_name: "Aviation", hours_to_close: 0.02, is_canceled: false, is_counted: true}
+          - {request_type: "Aircraft Noise Complaint", department_name: "Aviation", hours_to_close: 30.0, is_canceled: false, is_counted: true}
+          - {request_type: "Pothole in Street Complaint", department_name: "CDOT", hours_to_close: 50.0, is_canceled: false, is_counted: true}
+          - {request_type: "Pothole in Street Complaint", department_name: "CDOT", hours_to_close: 0.1, is_canceled: true, is_counted: true}
+          - {request_type: "Pothole in Street Complaint", department_name: "CDOT", hours_to_close: 0.1, is_canceled: false, is_counted: false}
+          - {request_type: "Pothole in Street Complaint", department_name: "CDOT", hours_to_close: null, is_canceled: false, is_counted: true}
+    expect:
+      rows:
+        - {request_type: "Aircraft Noise Complaint", is_closed_on_receipt: true, requests_all_time: 3}
+        - {request_type: "Pothole in Street Complaint", is_closed_on_receipt: false, requests_all_time: 3}

@@ -1,8 +1,8 @@
 -- Grain: one row per department per month of request creation.
 with requests as (
     select r.*, cast(date_trunc('month', r.created_date) as date) as month_start
-    from {{ ref('fct_service_requests') }} as r
-    where r.is_counted and not r.is_canceled
+    from {{ ref('int_311__service_work') }} as r
+    where not r.is_canceled
 ),
 
 monthly as (

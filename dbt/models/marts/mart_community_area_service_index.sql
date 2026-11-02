@@ -1,15 +1,16 @@
 {#-
     Are some neighborhoods served more slowly for the same kind of request?
     Raw medians mix request types (a building inspection takes longer than graffiti removal), so each closed
-    request is compared with the citywide median time for its own type in the same window. The service index is
-    the geometric mean of those ratios: 1.00 = typical, 1.25 = 25% slower than typical for the same work.
+    request is divided by the citywide median time for its own type in the same window. A community area's service
+    index is the median of those ratios: 1.00 = a typical request there closes exactly as fast as the citywide
+    typical request of the same type; 1.25 = 25% slower; 0.80 = 20% faster.
 -#}
 with w as (select * from {{ ref('int_311__kpi_window') }}),
 
 closed as (
     select r.*
-    from {{ ref('fct_service_requests') }} as r, w
-    where r.is_counted and not r.is_canceled
+    from {{ ref('int_311__service_work') }} as r, w
+    where not r.is_canceled
       and r.hours_to_close > 0
       and r.created_date > w.window_start and r.created_date <= w.window_end
 ),
@@ -20,7 +21,7 @@ type_medians as (
 ),
 
 scored as (
-    select c.community_area_id, ln(c.hours_to_close / t.type_median_hours) as log_ratio, c.hours_to_close,
+    select c.community_area_id, c.hours_to_close / t.type_median_hours as ratio, c.hours_to_close,
            c.closed_within_7d
     from closed as c
     join type_medians as t using (request_type_key)
@@ -31,7 +32,7 @@ select
     s.community_area_id,
     a.community_area_name,
     count(*)                                      as closed_requests,
-    exp(avg(s.log_ratio))                         as service_index,
+    median(s.ratio)                               as service_index,
     median(s.hours_to_close) / 24                 as median_days_to_close,
     avg(s.closed_within_7d::int)                  as pct_closed_within_7d
 from scored as s

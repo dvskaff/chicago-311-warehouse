@@ -26,6 +26,11 @@ def results_block(s: dict) -> str:
         f"| Closed within 7 days | {s['pct_closed_within_7d']:.1%} | {d7:+.1f} pts |",
         f"| Open right now | {s['open_requests']:,} ({s['open_over_30_days']:,} older than 30 days) | |",
         "",
+        f"_Service work only: duplicates, information-only calls and {s.get('closed_on_receipt_types', 0)} request "
+        f"type{'' if s.get('closed_on_receipt_types', 0) == 1 else 's'} the city closes on receipt "
+        f"({s.get('closed_on_receipt_requests', 0):,} requests in the window, "
+        "e.g. complaints that are only logged) are excluded from these metrics._",
+        "",
         "| Department | Requests | Median days to close | Closed within 7 days | Open now |",
         "|---|---|---|---|---|",
     ]

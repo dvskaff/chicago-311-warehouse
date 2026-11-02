@@ -3,9 +3,9 @@ with w as (select * from {{ ref('int_311__kpi_window') }}),
 
 requests as (
     select r.*, d.department_name
-    from {{ ref('fct_service_requests') }} as r
+    from {{ ref('int_311__service_work') }} as r
     join {{ ref('dim_department') }} as d using (department_key)
-    where r.is_counted and not r.is_canceled
+    where not r.is_canceled
 ),
 
 current_window as (

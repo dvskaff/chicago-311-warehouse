@@ -1,6 +1,7 @@
 -- Grain: one row per day per department. Backlog = requests opened minus closed, cumulatively.
+-- Service work only (see int_311__service_work).
 with requests as (
-    select * from {{ ref('fct_service_requests') }} where is_counted
+    select * from {{ ref('int_311__service_work') }}
 ),
 
 opened as (

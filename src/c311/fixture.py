@@ -26,6 +26,7 @@ TYPES = {  # request type -> (owner department, short code, typical days to clos
     "Sewer Cleaning Inspection Request": ("Water Management", "WBK", 12.0),
     "Stray Animal Complaint": ("Animal Care and Control", "EAF", 1.5),
     "Building Violation": ("Buildings", "BBA", 30.0),
+    "Aircraft Noise Complaint": ("Aviation", "AVN", 0.005),  # logged and closed on receipt
 }
 
 
@@ -40,7 +41,7 @@ def make_requests(
     rng = np.random.default_rng(seed)
     t0, t1 = pd.Timestamp(start), pd.Timestamp(end)
     names = list(TYPES)
-    probs = np.array([18, 10, 14, 8, 12, 9, 6, 7, 4], float)
+    probs = np.array([18, 10, 14, 8, 12, 9, 6, 7, 4, 12], float)
     probs /= probs.sum()
     rows = []
     for i in range(n):

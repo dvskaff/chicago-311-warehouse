@@ -21,29 +21,7 @@ them into a DuckDB warehouse, rebuilds a tested dbt star schema, and republishes
 Rewritten automatically after every daily run.
 
 <!-- RESULTS:START -->
-_Data through Nov 02, 2026 · requests created Oct 27, 2025 – Oct 26, 2026 · 4,889,101 requests in the warehouse_
-
-| Metric | Last 12 months | vs. prior 12 months |
-|---|---|---|
-| Service requests | 1,326,083 | +15.9% |
-| Median time to close | 0.1 days | |
-| Closed within 7 days | 73.5% | -0.6 pts |
-| Open right now | 153,768 (128,470 older than 30 days) | |
-
-| Department | Requests | Median days to close | Closed within 7 days | Open now |
-|---|---|---|---|---|
-| Streets and Sanitation | 524,415 | 2.1 | 63% | 67,238 |
-| Aviation | 448,870 | 0.0 | 100% | 0 |
-| CDOT - Department of Transportation | 164,771 | 2.9 | 56% | 35,474 |
-| DWM - Department of Water Management | 64,500 | 1.7 | 49% | 36,081 |
-| DOB - Buildings | 41,541 | 21.8 | 22% | 10,483 |
-| Animal Care and Control | 24,163 | 0.9 | 80% | 1,696 |
-| Finance | 23,095 | 0.0 | 100% | 0 |
-| Outside Agencies | 14,211 | 0.1 | 92% | 466 |
-
-**Neighborhood equity:** across 77 community areas, the slowest is O'Hare, where requests take 1.00× the typical time to close for the same request types; the fastest is Loop at 0.14×.
-
-**Latest run:** 15 dbt models, 68 data tests and 2 unit tests: 68 passed, 2 warnings, 0 failed · source freshness: pass · 2026-11-02 14:15 UTC
+_Results appear here after the first run of the **Daily pipeline** workflow._
 <!-- RESULTS:END -->
 
 ## Architecture
@@ -59,6 +37,7 @@ raw.load_log               one row per load: mode, rows, watermark
         ▼
 staging        stg_311__service_requests   latest version per request, typed and cleaned (view)
 intermediate   int_311__requests_enriched  closure timing, counting rules (view)
+               int_311__service_work       what KPIs measure: no duplicates, no types closed on receipt
                int_311__kpi_window         reporting window, defined once (ephemeral)
 marts          fct_service_requests        fact, 1 row per request (incremental, enforced contract)
                dim_date · dim_department · dim_request_type · dim_community_area (seed)
@@ -71,7 +50,7 @@ exposure       chicago_311_dashboard       the public dashboard, declared in dbt
 GitHub Pages   dashboard + dbt docs site (static)
 ```
 
-**Data quality.** About 70 dbt data tests run on every build: uniqueness and not-null keys, relationships between
+**Data quality.** More than 70 dbt data tests run on every build: uniqueness and not-null keys, relationships between
 the fact and every dimension, accepted values, range checks, an enforced model contract on the fact table,
 singular tests that reconcile row counts between layers and check that no department's backlog goes negative, and
 warning-level monitors for data-entry errors (closures recorded before creation). dbt unit tests cover the
@@ -109,6 +88,9 @@ cd dbt && dbt docs serve --profiles-dir .               # browse the docs and li
 [City of Chicago 311 Service Requests](https://data.cityofchicago.org/Service-Requests/311-Service-Requests/v6vf-nfxy)
 (Chicago Data Portal), requests created since January 1, 2023. Information-only calls are excluded at extraction
 because they are not service work, and legacy records migrated from the pre-2018 system are excluded in staging.
+Request types the city closes on receipt (median time to close under an hour, such as complaints that are only
+logged) stay in the warehouse but are excluded from timing and backlog metrics, because they would make service look
+faster than it is.
 No API key or account is needed.
 
 ## Stack

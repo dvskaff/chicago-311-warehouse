@@ -101,6 +101,10 @@ def load_marts(db_path: Path) -> dict[str, pd.DataFrame]:
                     where is_open and is_counted and latitude is not null and longitude is not null
                 ) using sample 20000 rows (reservoir, 42)"""),
             "load_log": q("select * from raw.load_log order by started_at desc limit 10"),
+            "closed_types": q("""
+                select request_type, owner_department_name, requests_all_time, median_hours_to_close
+                from marts.dim_request_type where is_closed_on_receipt
+                order by requests_all_time desc"""),
             "layers": q("""
                 select 'Raw (append-only log)' as layer, 'raw.service_requests' as relation,
                        (select count(*) from raw.service_requests) as row_count
@@ -544,6 +548,33 @@ def build_site(
         (site / "dbt-docs").mkdir(exist_ok=True)
         shutil.copy(docs, site / "dbt-docs" / "index.html")
 
+    ct = data["closed_types"]
+    if len(ct):
+        names = ", ".join(html.escape(n) for n in ct["request_type"].head(3))
+        type_rows = [
+            [
+                html.escape(r.request_type),
+                html.escape(str(r.owner_department_name)),
+                _int(r.requests_all_time),
+                f"{r.median_hours_to_close * 60:.0f} min",
+            ]
+            for r in ct.itertuples(index=False)
+        ]
+        closed_note = (
+            f"<b>{len(ct)} request type{'' if len(ct) == 1 else 's'} the city closes on receipt</b> "
+            f"({_int(k['closed_on_receipt_requests'])} "
+            f"requests in the last 12 months; largest: {names}). Their median time to close is under an hour, so "
+            "they are logged rather than worked and would make service look faster than it is.</p>"
+            f"<details><summary>Show the excluded request type{'' if len(ct) == 1 else 's'}</summary>"
+            + _table(
+                ["Request type", "Department", "Requests since 2023", "Median time to close"],
+                type_rows,
+                left_cols=2,
+            )
+            + "</details>"
+        )
+    else:
+        closed_note = "request types the city closes on receipt (none detected in this data).</p>"
     cards = "".join(
         [
             _card("Requests, last 12 months", _int(k["requests"]), f"{_pct(vol, True)} vs. prior 12 months"),
@@ -599,8 +630,8 @@ def build_site(
 <div class="cards">{cards}</div>
 
 <section><h2>Demand and throughput</h2>
-<p>Every request created since January 2023 (information-only calls and duplicates excluded). When the closed
-line sits below the opened line, the backlog grows.</p>
+<p>Service requests created since January 2023. When the closed line sits below the opened line, the backlog
+grows. Information-only calls and duplicates are excluded, and so are {closed_note}
 <div class="grid2">{_div(fig_flow(data["weekly"]))}{_div(fig_backlog(data["weekly"]))}</div></section>
 
 <section><h2>Department scorecard</h2>
@@ -616,7 +647,8 @@ week to close), compared with the 12 months before. "Open now" counts every unre
 <section><h2>Is service equally fast in every neighborhood?</h2>
 <p>Raw medians would mislead, because neighborhoods file different kinds of requests. Each closed request is
 compared with the citywide median for its own request type; a community area's <b>service index</b> is the
-geometric mean of those ratios. 1.00 means typical speed, 1.20 means 20% slower than typical for the same work.
+median of those ratios. 1.00 means a typical request there closes as fast as the citywide typical request of
+the same type; 1.20 means 20% slower, 0.80 means 20% faster.
 Areas with fewer than 200 closed requests in the window are left out.</p>
 {area_html}</section>
 
@@ -663,6 +695,8 @@ canceled but are not counted in resolution-time metrics.</li>
         "open_requests": int(k["open_requests"]),
         "open_over_30_days": int(k["open_over_30_days"]),
         "requests_in_warehouse": int(k["requests_in_warehouse"]),
+        "closed_on_receipt_requests": int(k["closed_on_receipt_requests"] or 0),
+        "closed_on_receipt_types": int(k["closed_on_receipt_types"] or 0),
         "departments": sc[
             ["department_name", "requests", "median_days_to_close", "pct_closed_within_7d", "open_requests"]
         ]

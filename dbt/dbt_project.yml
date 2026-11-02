@@ -18,6 +18,9 @@ vars:
   backfill_start: "2023-01-01"
   # A request closed within this many days counts as "closed within a week".
   fast_close_days: 7
+  # Request types whose median time to close is under this many hours are closed on receipt (e.g. complaints
+  # that are only logged). They count toward volume but not toward timing or backlog metrics.
+  closed_on_receipt_hours: 1
   # Community areas need this many closed requests in the window to get a service index.
   min_area_requests: 200
 
