@@ -21,29 +21,29 @@ them into a DuckDB warehouse, rebuilds a tested dbt star schema, and republishes
 Rewritten automatically after every daily run.
 
 <!-- RESULTS:START -->
-_Data through Nov 02, 2026 · requests created Oct 27, 2025 – Oct 26, 2026 · 4,889,065 requests in the warehouse_
+_Data through Nov 02, 2026 · requests created Oct 27, 2025 – Oct 26, 2026 · 4,889,101 requests in the warehouse_
 
 | Metric | Last 12 months | vs. prior 12 months |
 |---|---|---|
 | Service requests | 1,326,083 | +15.9% |
 | Median time to close | 0.1 days | |
 | Closed within 7 days | 73.5% | -0.6 pts |
-| Open right now | 153,771 (128,473 older than 30 days) | |
+| Open right now | 153,768 (128,470 older than 30 days) | |
 
 | Department | Requests | Median days to close | Closed within 7 days | Open now |
 |---|---|---|---|---|
-| Streets and Sanitation | 524,415 | 2.1 | 63% | 67,235 |
+| Streets and Sanitation | 524,415 | 2.1 | 63% | 67,238 |
 | Aviation | 448,870 | 0.0 | 100% | 0 |
-| CDOT - Department of Transportation | 164,771 | 2.9 | 56% | 35,475 |
-| DWM - Department of Water Management | 64,500 | 1.7 | 49% | 36,091 |
-| DOB - Buildings | 41,541 | 21.8 | 22% | 10,482 |
-| Animal Care and Control | 24,163 | 0.9 | 80% | 1,695 |
+| CDOT - Department of Transportation | 164,771 | 2.9 | 56% | 35,474 |
+| DWM - Department of Water Management | 64,500 | 1.7 | 49% | 36,081 |
+| DOB - Buildings | 41,541 | 21.8 | 22% | 10,483 |
+| Animal Care and Control | 24,163 | 0.9 | 80% | 1,696 |
 | Finance | 23,095 | 0.0 | 100% | 0 |
 | Outside Agencies | 14,211 | 0.1 | 92% | 466 |
 
 **Neighborhood equity:** across 77 community areas, the slowest is O'Hare, where requests take 1.00× the typical time to close for the same request types; the fastest is Loop at 0.14×.
 
-**Latest run:** 15 dbt models, 68 data tests and 2 unit tests: 68 passed, 2 warnings, 0 failed · source freshness: pass · 2026-11-02 14:09 UTC
+**Latest run:** 15 dbt models, 68 data tests and 2 unit tests: 68 passed, 2 warnings, 0 failed · source freshness: pass · 2026-11-02 14:15 UTC
 <!-- RESULTS:END -->
 
 ## Architecture
