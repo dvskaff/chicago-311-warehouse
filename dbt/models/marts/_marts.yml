@@ -1,0 +1,172 @@
+version: 2
+
+models:
+  - name: fct_service_requests
+    description: >
+      Fact table, one row per 311 service request (latest state). Incremental: each daily run merges only the
+      requests modified since the previous run. The contract guarantees column names and types for every
+      downstream consumer.
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: sr_number
+        data_type: varchar
+        description: Service request number.
+        constraints: [{type: not_null}]
+        data_tests: [unique, not_null]
+      - name: request_type_key
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships: {arguments: {to: ref('dim_request_type'), field: request_type_key}}
+      - name: department_key
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships: {arguments: {to: ref('dim_department'), field: department_key}}
+      - name: community_area_id
+        data_type: integer
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_community_area'), field: community_area_id}
+              config: {severity: warn}
+      - name: created_date
+        data_type: date
+        data_tests:
+          - not_null
+          - relationships: {arguments: {to: ref('dim_date'), field: date_day}}
+      - name: closed_date
+        data_type: date
+      - name: created_at
+        data_type: timestamp
+      - name: closed_at
+        data_type: timestamp
+      - name: last_modified_at
+        data_type: timestamp
+      - name: status
+        data_type: varchar
+      - name: origin
+        data_type: varchar
+      - name: hours_to_close
+        data_type: double
+        description: Hours from creation to closure; NULL while open or when the recorded closure precedes creation.
+        data_tests: [not_negative]
+      - name: closed_within_7d
+        data_type: boolean
+      - name: is_open
+        data_type: boolean
+      - name: is_canceled
+        data_type: boolean
+      - name: is_duplicate
+        data_type: boolean
+      - name: is_counted
+        data_type: boolean
+        description: TRUE unless the request is a duplicate of another; only counted requests feed KPIs.
+      - name: has_closure_before_creation
+        data_type: boolean
+        description: Data-quality flag; monitored by tests/assert_closures_before_creation_are_rare.sql.
+      - name: ward
+        data_type: integer
+      - name: latitude
+        data_type: double
+      - name: longitude
+        data_type: double
+
+  - name: fct_daily_department_activity
+    description: One row per day per department with requests opened, closed and the end-of-day backlog.
+    data_tests:
+      - unique_combination: {arguments: {combination_of_columns: [date_day, department_key]}}
+    columns:
+      - name: backlog_end_of_day
+        data_tests: [not_null]
+      - name: requests_opened
+        data_tests: [not_negative]
+      - name: requests_closed
+        data_tests: [not_negative]
+
+  - name: dim_date
+    description: Calendar spine from the backfill start to the latest data.
+    config:
+      contract: {enforced: true}
+    columns:
+      - {name: date_day, data_type: date, constraints: [{type: not_null}], data_tests: [unique, not_null]}
+      - {name: year, data_type: bigint}
+      - {name: quarter, data_type: bigint}
+      - {name: month, data_type: bigint}
+      - {name: month_name, data_type: varchar}
+      - {name: month_start, data_type: date}
+      - {name: week_start, data_type: date}
+      - {name: iso_day_of_week, data_type: bigint}
+      - {name: is_weekend, data_type: boolean}
+
+  - name: dim_department
+    description: City departments that own 311 requests.
+    columns:
+      - {name: department_key, data_tests: [unique, not_null]}
+      - {name: department_name, data_tests: [unique, not_null]}
+
+  - name: dim_request_type
+    description: 311 request types and the department that owns most of them.
+    columns:
+      - {name: request_type_key, data_tests: [unique, not_null]}
+      - {name: request_type, data_tests: [unique, not_null]}
+
+  - name: dim_community_area
+    description: Chicago's 77 community areas.
+    columns:
+      - {name: community_area_id, data_tests: [unique, not_null]}
+
+  - name: mart_department_monthly_kpis
+    description: Monthly performance per department (requests created that month, resolution times, backlog).
+    data_tests:
+      - unique_combination: {arguments: {combination_of_columns: [month_start, department_key]}}
+    columns:
+      - name: pct_closed_within_7d
+        data_tests: [{between: {arguments: {min_value: 0, max_value: 1}}}]
+
+  - name: mart_department_scorecard
+    description: Trailing-12-month scorecard per department vs. the prior 12 months, plus the current backlog.
+    columns:
+      - {name: department_key, data_tests: [unique, not_null]}
+      - name: pct_closed_within_7d
+        data_tests: [{between: {arguments: {min_value: 0, max_value: 1}}}]
+      - name: open_requests
+        data_tests: [not_negative]
+
+  - name: mart_request_type_performance
+    description: Trailing-12-month performance per request type.
+    columns:
+      - {name: request_type_key, data_tests: [unique, not_null]}
+
+  - name: mart_community_area_service_index
+    description: >
+      Type-adjusted service speed per community area: geometric mean of (time to close / citywide median for the
+      same request type). 1.00 = typical; above 1 = slower than typical for the same work.
+    columns:
+      - {name: community_area_id, data_tests: [unique, not_null]}
+      - name: service_index
+        data_tests: [not_null, {expression_is_true: {arguments: {expression: "service_index > 0"}}}]
+
+  - name: mart_kpi_summary
+    description: One row of headline KPIs used by the dashboard and README.
+    data_tests:
+      - expression_is_true: {arguments: {expression: "requests > 0"}}
+      - expression_is_true: {arguments: {expression: "pct_closed_within_7d between 0 and 1"}}
+
+exposures:
+  - name: chicago_311_dashboard
+    label: Chicago 311 Service Performance dashboard
+    type: dashboard
+    maturity: high
+    url: https://dvskaff.github.io/chicago-311-warehouse/
+    description: Public dashboard rebuilt daily by GitHub Actions from the marts below.
+    depends_on:
+      - ref('mart_kpi_summary')
+      - ref('mart_department_scorecard')
+      - ref('mart_department_monthly_kpis')
+      - ref('mart_request_type_performance')
+      - ref('mart_community_area_service_index')
+      - ref('fct_daily_department_activity')
+      - ref('fct_service_requests')
+    owner:
+      name: David Skaff

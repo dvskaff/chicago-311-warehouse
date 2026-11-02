@@ -1,0 +1,13 @@
+snapshots:
+  - name: snap_request_status
+    relation: ref('stg_311__request_status')
+    description: >
+      Slowly changing dimension (type 2) of each request's status, owner department and closed date.
+      Each daily run records any change with dbt_valid_from / dbt_valid_to, so the warehouse keeps a history of
+      reopened, reassigned or re-closed requests that the source itself overwrites.
+    config:
+      schema: snapshots
+      unique_key: sr_number
+      strategy: timestamp
+      updated_at: last_modified_at
+      hard_deletes: ignore

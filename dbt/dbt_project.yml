@@ -1,0 +1,42 @@
+name: chicago_311
+version: "1.0.0"
+config-version: 2
+profile: chicago_311
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+snapshot-paths: ["snapshots"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "logs"]
+
+flags:
+  send_anonymous_usage_stats: false
+
+vars:
+  backfill_start: "2023-01-01"
+  # A request closed within this many days counts as "closed within a week".
+  fast_close_days: 7
+  # Community areas need this many closed requests in the window to get a service index.
+  min_area_requests: 200
+
+models:
+  chicago_311:
+    staging:
+      +schema: staging
+      +materialized: view
+    intermediate:
+      +schema: intermediate
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table
+
+seeds:
+  chicago_311:
+    +schema: reference
+
+data_tests:
+  chicago_311:
+    +store_failures: false

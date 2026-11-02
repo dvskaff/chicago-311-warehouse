@@ -1,0 +1,7 @@
+chicago_311:
+  target: prod
+  outputs:
+    prod:
+      type: duckdb
+      path: "{{ env_var('C311_DB_PATH', '../warehouse/chicago311.duckdb') }}"
+      threads: 4

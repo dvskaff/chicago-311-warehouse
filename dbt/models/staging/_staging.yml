@@ -1,0 +1,59 @@
+version: 2
+
+models:
+  - name: stg_311__service_requests
+    description: >
+      Latest version of every 311 service request created since the backfill start, typed and cleaned.
+      Information-only calls are excluded at extraction; legacy (pre-2018 system) records are excluded here.
+    columns:
+      - name: sr_number
+        description: Service request number (natural key).
+        data_tests: [unique, not_null]
+      - name: request_type
+        data_tests: [not_null]
+      - name: department_name
+        data_tests: [not_null]
+      - name: status
+        description: Request status as published (Open, Completed, Canceled).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["Open", "Completed", "Canceled"]
+              config:
+                severity: warn
+      - name: created_at
+        data_tests: [not_null]
+      - name: community_area_id
+        data_tests:
+          - between: {arguments: {min_value: 1, max_value: 77}, config: {severity: warn}}
+      - name: latitude
+        data_tests:
+          - between: {arguments: {min_value: 41.6, max_value: 42.1}, config: {severity: warn}}
+      - name: longitude
+        data_tests:
+          - between: {arguments: {min_value: -88.0, max_value: -87.5}, config: {severity: warn}}
+
+  - name: stg_311__request_status
+    description: Status-related fields only; input to the SCD type 2 snapshot.
+    columns:
+      - name: sr_number
+        data_tests: [unique, not_null]
+
+unit_tests:
+  - name: stg_keeps_latest_version_and_casts_types
+    description: >
+      The raw log can hold several versions of a request. Staging must keep the most recently modified one,
+      parse timestamps and booleans, and drop legacy records.
+    model: stg_311__service_requests
+    given:
+      - input: source('chicago_311', 'service_requests')
+        rows:
+          - {sr_number: "SR1", sr_type: "Pothole in Street Complaint", sr_short_code: "phf", owner_department: "CDOT", status: "Open", created_date: "2024-03-01T08:00:00.000", last_modified_date: "2024-03-01T09:00:00.000", closed_date: null, duplicate: "false", legacy_record: "false", community_area: "35.0", _batch_id: "a", _loaded_at: "2024-03-02 00:00:00"}
+          - {sr_number: "SR1", sr_type: "Pothole in Street Complaint", sr_short_code: "phf", owner_department: "CDOT", status: "Completed", created_date: "2024-03-01T08:00:00.000", last_modified_date: "2024-03-04T10:00:00.000", closed_date: "2024-03-04T10:00:00.000", duplicate: "false", legacy_record: "false", community_area: "35.0", _batch_id: "b", _loaded_at: "2024-03-05 00:00:00"}
+          - {sr_number: "SR2", sr_type: "  Graffiti   Removal Request ", sr_short_code: "graf", owner_department: "Streets and Sanitation", status: "Open", created_date: "2024-03-02T08:00:00.000", last_modified_date: "2024-03-02T08:00:00.000", closed_date: null, duplicate: "true", legacy_record: "false", community_area: null, _batch_id: "a", _loaded_at: "2024-03-02 00:00:00"}
+          - {sr_number: "SR3", sr_type: "Graffiti Removal Request", sr_short_code: "graf", owner_department: "Streets and Sanitation", status: "Completed", created_date: "2018-11-02T08:00:00.000", last_modified_date: "2018-11-03T08:00:00.000", closed_date: "2018-11-03T08:00:00.000", duplicate: "false", legacy_record: "true", community_area: "1", _batch_id: "a", _loaded_at: "2024-03-02 00:00:00"}
+    expect:
+      rows:
+        - {sr_number: "SR1", request_type: "Pothole in Street Complaint", request_type_code: "PHF", status: "Completed", closed_at_source: "2024-03-04 10:00:00", is_duplicate: false, community_area_id: 35}
+        - {sr_number: "SR2", request_type: "Graffiti Removal Request", request_type_code: "GRAF", status: "Open", closed_at_source: null, is_duplicate: true, community_area_id: null}

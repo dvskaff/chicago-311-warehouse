@@ -1,0 +1,33 @@
+version: 2
+
+sources:
+  - name: chicago_311
+    description: >
+      Raw layer loaded by src/c311/extract.py from the City of Chicago 311 Service Requests dataset
+      (data.cityofchicago.org, id v6vf-nfxy). Append-only: every fetched version of a request is kept, all
+      columns as text, exactly as the API returned them.
+    schema: raw
+    tables:
+      - name: service_requests
+        description: One row per fetched version of a service request.
+        # Freshness is measured on the source's own modification time, not on when we loaded it, so a stale
+        # upstream feed is caught even though the pipeline itself runs every day.
+        loaded_at_field: "try_cast(last_modified_date as timestamp)"
+        config:
+          freshness:
+            warn_after: {count: 3, period: day}
+            error_after: {count: 7, period: day}
+        columns:
+          - name: sr_number
+            description: Service request number (natural key).
+            data_tests: [not_null]
+          - name: _batch_id
+            description: Load batch that inserted the row (see raw.load_log).
+          - name: _loaded_at
+            description: When the row was loaded.
+
+      - name: load_log
+        description: One row per pipeline load (backfill or incremental) with row counts and watermark.
+        columns:
+          - name: batch_id
+            data_tests: [unique, not_null]

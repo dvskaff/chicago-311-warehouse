@@ -1,0 +1,16 @@
+version: 2
+
+seeds:
+  - name: community_areas
+    description: >
+      Chicago's 77 official community areas (number and name). Reference data maintained in the repo as a
+      dbt seed so every request can be labeled with a neighborhood name.
+    config:
+      column_types:
+        community_area_id: integer
+        community_area_name: varchar
+    columns:
+      - name: community_area_id
+        data_tests: [unique, not_null, {between: {arguments: {min_value: 1, max_value: 77}}}]
+      - name: community_area_name
+        data_tests: [unique, not_null]
