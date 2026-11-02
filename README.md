@@ -21,7 +21,31 @@ them into a DuckDB warehouse, rebuilds a tested dbt star schema, and republishes
 Rewritten automatically after every daily run.
 
 <!-- RESULTS:START -->
-_Results appear here after the first run of the **Daily pipeline** workflow._
+_Data through Nov 02, 2026 · requests created Oct 27, 2025 – Oct 26, 2026 · 4,889,101 requests in the warehouse_
+
+| Metric | Last 12 months | vs. prior 12 months |
+|---|---|---|
+| Service requests | 811,106 | +12.5% |
+| Median time to close | 2.9 days | |
+| Closed within 7 days | 56.7% | -2.2 pts |
+| Open right now | 153,731 (128,433 older than 30 days) | |
+
+_Service work only: duplicates, information-only calls and 5 request types the city closes on receipt (514,978 requests in the window, e.g. complaints that are only logged) are excluded from these metrics._
+
+| Department | Requests | Median days to close | Closed within 7 days | Open now |
+|---|---|---|---|---|
+| Streets and Sanitation | 483,530 | 2.9 | 60% | 67,209 |
+| CDOT - Department of Transportation | 162,644 | 3.0 | 56% | 35,466 |
+| DWM - Department of Water Management | 64,500 | 1.7 | 49% | 36,081 |
+| DOB - Buildings | 41,541 | 21.8 | 22% | 10,483 |
+| Animal Care and Control | 24,163 | 0.9 | 80% | 1,696 |
+| Outside Agencies | 14,211 | 0.1 | 92% | 466 |
+| BACP - Business Affairs and Consumer Protection | 11,792 | 25.8 | 22% | 2,136 |
+| City Clerk's Office | 4,550 | 4.0 | 67% | 56 |
+
+**Neighborhood equity:** across 77 community areas, the slowest is West Garfield Park, where requests take 1.44× the typical time to close for the same request types; the fastest is Armour Square at 0.65×.
+
+**Latest run:** 16 dbt models, 71 data tests and 3 unit tests: 72 passed, 2 warnings, 0 failed · source freshness: pass · 2026-11-02 14:29 UTC
 <!-- RESULTS:END -->
 
 ## Architecture
