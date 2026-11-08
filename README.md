@@ -56,9 +56,10 @@ _Service work only: duplicates, information-only calls and 5 request types the c
   the last 12 months of service requests into DuckDB running inside your browser (DuckDB-WASM, served by the site
   itself). Write any query, or start from the examples: slowest request types, filing channels, busiest days, backlog.
   The tables are re-exported after every daily build, with the dbt descriptions of every column.
-* **Neighborhood map.** [`maps/community_area_service_index.geojson`](maps/community_area_service_index.geojson) is
-  rewritten every day with each community area's service index; GitHub draws it as an interactive map (click an area
-  for its numbers). Boundaries come from the city's open data and are kept in the warehouse after the first download.
+* **Neighborhood map.** The [dashboard's map](https://dvskaff.github.io/chicago-311-warehouse/#map) colors each of
+  the 77 community areas by its service index (hover for its numbers). The same polygons and numbers are rewritten
+  every day to [`maps/community_area_service_index.geojson`](maps/community_area_service_index.geojson) for GIS tools.
+  Boundaries come from the city's open data and are kept in the warehouse after the first download.
 
 ## Architecture
 

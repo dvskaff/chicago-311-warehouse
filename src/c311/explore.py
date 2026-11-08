@@ -204,7 +204,7 @@ const kind = (f) => {{ const t = String(f.type); return t.startsWith("Date") ? "
   : /^(Int|Uint|Float|Decimal)/.test(t) ? "num" : "other"; }};
 const raw = (v, k) => v === null || v === undefined ? "" : k === "date" ? new Date(Number(v)).toISOString().slice(0, 10)
   : k === "ts" ? new Date(Number(v)).toISOString().slice(0, 19).replace("T", " ") : typeof v === "bigint" ? v.toString() : String(v);
-const fmt = (v, k) => typeof v === "number" && k !== "date" && k !== "ts"
+const fmt = (v, k) => k === "plain" ? raw(v, k) : typeof v === "number" && k !== "date" && k !== "ts"
   ? (Number.isInteger(v) ? v.toLocaleString() : v.toLocaleString(undefined, {{maximumFractionDigits: 4}}))
   : typeof v === "bigint" ? v.toLocaleString() : raw(v, k);
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({{"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}})[c]);
@@ -238,10 +238,11 @@ async function run() {{
   try {{
     const res = await conn.query($("sql").value);
     const cols = res.schema.fields.map((f) => f.name);
-    const kinds = res.schema.fields.map(kind);
+    // IDs, years, flight numbers and ranks are labels, not quantities: no thousands separators
+    const kinds = res.schema.fields.map((f) => /(^|_)(year|id|number|rank|code)$/i.test(f.name) ? "plain" : kind(f));
     const rows = res.toArray();
     last = {{cols, kinds, rows}};
-    const cls = (i) => kinds[i] === "num" ? "" : "l";  // numbers right-aligned
+    const cls = (i) => kinds[i] === "num" || kinds[i] === "plain" ? "" : "l";  // numbers right-aligned
     const head = "<tr>" + cols.map((c, i) => `<th class="${{cls(i)}}">${{esc(c)}}</th>`).join("") + "</tr>";
     const body = rows.slice(0, 1000).map((r) => "<tr>" + cols.map((c, i) => `<td class="${{cls(i)}}">${{esc(fmt(r[c], kinds[i]))}}</td>`).join("") + "</tr>").join("");
     $("results").innerHTML = `<table><thead>${{head}}</thead><tbody>${{body}}</tbody></table>`;
