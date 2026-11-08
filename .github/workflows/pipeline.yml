@@ -55,6 +55,10 @@ jobs:
             echo "No saved warehouse yet: this run backfills everything since 2023 (takes longer)."
           fi
 
+      # DuckDB compiled to WebAssembly, so visitors can query the warehouse in the browser (sql.html).
+      - name: Get the browser SQL runtime (DuckDB-WASM, from npm)
+        run: bash scripts/fetch_web_runtime.sh
+
       - name: Extract, load, transform, test, document, build site
         run: python -m c311.pipeline ${{ inputs.full_refresh && '--full-refresh' || '' }}
         env:
@@ -68,14 +72,15 @@ jobs:
             --notes "DuckDB file with the raw 311 log, every dbt model and the snapshot history. Download, run 'zstd -d chicago311.duckdb.zst', then open it with DuckDB."
           gh release upload warehouse chicago311.duckdb.zst --clobber
 
-      - name: Commit README results
+      - name: Commit README results and the map
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add README.md
+          if [ -d maps ]; then git add maps; fi
           if ! git diff --staged --quiet; then
             git commit -m "Daily results: data through $(python -c 'import json;print(json.load(open("site/results.json"))["data_as_of"][:10])')"
-            git pull --rebase
+            git pull --rebase -X theirs
             git push
           fi
 
