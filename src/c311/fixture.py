@@ -126,3 +126,15 @@ class FakeSocrata:
         cols = [c.strip() for c in params["$select"].split(",")]
         off, lim = int(params["$offset"]), int(params["$limit"])
         return out[cols].iloc[off : off + lim].reset_index(drop=True)
+
+
+def boundaries() -> dict:
+    """SYNTHETIC community-area polygons: a grid of squares over Chicago, one per area id 1..77 (tests only)."""
+    feats = []
+    for i in range(77):
+        row, col = divmod(i, 11)
+        x0, y0 = -87.94 + col * 0.03, 41.64 + row * 0.05
+        ring = [[x0, y0], [x0 + 0.03, y0], [x0 + 0.03, y0 + 0.05], [x0, y0 + 0.05], [x0, y0]]
+        feats.append({"type": "Feature", "properties": {"area_numbe": str(i + 1), "community": f"AREA {i + 1}"},
+                      "geometry": {"type": "Polygon", "coordinates": [ring]}})  # fmt: skip
+    return {"type": "FeatureCollection", "features": feats}

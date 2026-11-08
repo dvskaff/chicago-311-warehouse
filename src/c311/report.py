@@ -515,6 +515,7 @@ details summary { cursor:pointer; color:#2a78d6; margin:4px 0 10px; }
 ul.method li { margin-bottom:6px; color:var(--ink2); }
 .btn { display:inline-block; background:#fff; color:#104281; border-radius:8px; padding:6px 12px; margin:12px 8px 0 0;
        font-weight:600; text-decoration:none; font-size:14px; }
+.btn.dark { background:#104281; color:#fff; margin:4px 0 14px; }
 footer { text-align:center; color:var(--muted); font-size:13px; padding:0 16px 40px; }
 """.replace("%FONT%", FONT)
 
@@ -530,7 +531,13 @@ window.addEventListener("load", () => document.querySelectorAll(".plotly-graph-d
 
 
 def build_site(
-    cfg: Config, target: Path, *, load_mode: str, rows_loaded: int, synthetic: bool = False
+    cfg: Config,
+    target: Path,
+    *,
+    load_mode: str,
+    rows_loaded: int,
+    synthetic: bool = False,
+    boundaries: pd.DataFrame | None = None,
 ) -> dict:
     site = cfg.site_dir
     site.mkdir(parents=True, exist_ok=True)
@@ -595,8 +602,27 @@ def build_site(
     map_fig = fig_open_map(data["open_points"])
     map_html = _div(map_fig) if map_fig else "<p class='muted'>No open requests with coordinates.</p>"
     areas = data["areas"]
+    choropleth, map_note = "", ""
+    if boundaries is not None and len(boundaries) and len(areas):
+        from . import geo
+
+        fc = geo.feature_collection(boundaries, areas, str(as_of.date()))
+        if (
+            not synthetic or cfg.map_path != Config().map_path
+        ):  # test data never overwrites the repository map
+            geo.write(cfg, fc)
+        fig = geo.fig_map(fc)
+        if fig is not None:
+            choropleth = _div(fig)
+            map_note = (
+                f"<p class='muted'>The same map is in the repository as "
+                f"<a href='{cfg.repo_url}/blob/main/maps/community_area_service_index.geojson'>a GeoJSON file</a>, "
+                "which GitHub shows as an interactive map. Gray areas had too few closed requests to score.</p>"
+            )
     area_html = (
-        f"<div class='grid2'>{_div(fig_area_index(areas))}<div><h3>Where open requests are right now</h3>"
+        choropleth
+        + map_note
+        + f"<div class='grid2'>{_div(fig_area_index(areas))}<div><h3>Where open requests are right now</h3>"
         f"{map_html}<p class='muted'>Density of a random sample of up to 20,000 open requests.</p></div></div>"
         f"<details><summary>All {len(areas)} community areas</summary>{areas_table(areas)}</details>"
         if len(areas)
@@ -624,7 +650,8 @@ def build_site(
   <p>How quickly does the City of Chicago resolve 311 requests for potholes, rats, broken street lights and more,
   and is service equally fast in every neighborhood? Built from the city's open data with an analytics warehouse
   (DuckDB + dbt) that reloads, tests and republishes itself every day.</p>
-  <a class="btn" href="{cfg.repo_url}">Code on GitHub</a><a class="btn" href="dbt-docs/">dbt docs &amp; lineage</a>
+  <a class="btn" href="sql.html">Query the warehouse (SQL in your browser)</a>
+  <a class="btn" href="dbt-docs/">dbt docs &amp; lineage</a><a class="btn" href="{cfg.repo_url}">Code on GitHub</a>
 </div></header>
 <main>
 <div class="cards">{cards}</div>
@@ -651,6 +678,12 @@ median of those ratios. 1.00 means a typical request there closes as fast as the
 the same type; 1.20 means 20% slower, 0.80 means 20% faster.
 Areas with fewer than 200 closed requests in the window are left out.</p>
 {area_html}</section>
+
+<section><h2>Query it yourself</h2>
+<p>The warehouse's marts and the last 12 months of service requests are exported after every build. The
+<a href="sql.html"><b>SQL page</b></a> loads them into DuckDB running inside your browser, so you can ask your own
+questions (slowest request types, busiest days, filing channels, any neighborhood) with nothing to install.</p>
+<a class="btn dark" href="sql.html">Open the SQL page</a></section>
 
 <section><h2>Pipeline health</h2>
 <p>Every run loads new and changed rows, rebuilds the models in dependency order, and runs the full test suite;

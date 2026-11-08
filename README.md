@@ -6,7 +6,9 @@
 ![Python](https://img.shields.io/badge/python-3.13-blue)
 
 **Live dashboard: https://dvskaff.github.io/chicago-311-warehouse/** ·
-**dbt docs & lineage: https://dvskaff.github.io/chicago-311-warehouse/dbt-docs/**
+**Query it in your browser: https://dvskaff.github.io/chicago-311-warehouse/sql.html** ·
+**dbt docs & lineage: https://dvskaff.github.io/chicago-311-warehouse/dbt-docs/** ·
+**Map: [`maps/community_area_service_index.geojson`](maps/community_area_service_index.geojson)**
 
 An end-to-end analytics engineering project on real city data. Every day a GitHub Action pulls new and updated
 311 service requests (potholes, rats, street lights, graffiti...) from the City of Chicago's open-data API, loads
@@ -48,7 +50,32 @@ _Service work only: duplicates, information-only calls and 5 request types the c
 **Latest run:** 16 dbt models, 71 data tests and 3 unit tests: 72 passed, 2 warnings, 0 failed · source freshness: pass · 2026-11-08 17:11 UTC
 <!-- RESULTS:END -->
 
+## Explore it yourself
+
+* **SQL in the browser.** The [SQL page](https://dvskaff.github.io/chicago-311-warehouse/sql.html) loads the marts and
+  the last 12 months of service requests into DuckDB running inside your browser (DuckDB-WASM, served by the site
+  itself). Write any query, or start from the examples: slowest request types, filing channels, busiest days, backlog.
+  The tables are re-exported after every daily build, with the dbt descriptions of every column.
+* **Neighborhood map.** [`maps/community_area_service_index.geojson`](maps/community_area_service_index.geojson) is
+  rewritten every day with each community area's service index; GitHub draws it as an interactive map (click an area
+  for its numbers). Boundaries come from the city's open data and are kept in the warehouse after the first download.
+
 ## Architecture
+
+```mermaid
+flowchart LR
+    API["Chicago Data Portal<br/>311 API"] -->|"backfill, then daily<br/>incremental loads"| RAW[("raw<br/>append-only log")]
+    RAW --> STG["staging<br/>latest version, typed"]
+    STG --> INT["intermediate<br/>business rules"]
+    INT --> MARTS["marts<br/>star schema + KPI tables"]
+    STG --> SNAP["snapshot<br/>SCD type 2 history"]
+    TESTS{{"74 dbt tests<br/>+ freshness"}} -.->|"gate"| MARTS
+    MARTS --> DASH["dashboard<br/>+ neighborhood map"]
+    MARTS --> SQL["SQL in the browser<br/>DuckDB-WASM"]
+    MARTS --> DOCS["dbt docs<br/>& lineage"]
+```
+
+<details><summary>Every model, layer by layer</summary>
 
 ```
 Chicago Data Portal (Socrata API, dataset v6vf-nfxy)
@@ -71,8 +98,10 @@ snapshots      snap_request_status         SCD type 2 history of status / depart
 exposure       chicago_311_dashboard       the public dashboard, declared in dbt for lineage
         │  src/c311/report.py
         ▼
-GitHub Pages   dashboard + dbt docs site (static)
+GitHub Pages   dashboard + dbt docs site (static) · sql.html (DuckDB-WASM on exported marts)
 ```
+
+</details>
 
 **Data quality.** More than 70 dbt data tests run on every build: uniqueness and not-null keys, relationships between
 the fact and every dimension, accepted values, range checks, an enforced model contract on the fact table,
@@ -92,6 +121,9 @@ at the start of the next one. You can download it from the Releases page and que
 | `src/c311/extract.py` | Socrata client, schema mapping, backfill and incremental loads into `raw` |
 | `dbt/` | dbt project: sources, staging, intermediate, marts, snapshot, seed, tests, macros, docs |
 | `src/c311/report.py` | Builds the dashboard from the marts and dbt's run artifacts |
+| `src/c311/explore.py` | Exports the marts for the browser and writes the SQL page (`sql.html`) |
+| `src/c311/geo.py` | Community-area boundaries, the map file in `maps/` and the dashboard's choropleth |
+| `scripts/fetch_web_runtime.sh` | Fetches DuckDB-WASM from npm and bundles it for the SQL page |
 | `src/c311/pipeline.py` | Runs everything in order: load → `dbt build` → freshness → docs → site → README |
 | `src/c311/fixture.py` | Synthetic, clearly labeled test data so CI can run the whole pipeline offline |
 | `tests/` | pytest suite, including a full dbt build on the synthetic data |

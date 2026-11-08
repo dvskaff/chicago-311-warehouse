@@ -19,7 +19,7 @@ from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
 
-from . import extract, fixture
+from . import explore, extract, fixture, geo
 from .config import Config
 from .readme import update_readme
 from .report import build_site
@@ -79,8 +79,18 @@ def run(
     # 4. Documentation site with lineage graph.
     dbt(cfg, ["docs", "generate", "--static", *vars_arg], target)
 
-    # 5. Website + README.
-    summary = build_site(cfg, target, load_mode=load.mode, rows_loaded=load.rows, synthetic=use_fixture)
+    # 5. Community-area boundaries (downloaded once, kept in the warehouse) for the map.
+    boundaries = geo.ensure_boundaries(cfg, fetch=fixture.boundaries if use_fixture else None)
+
+    # 6. Website (+ map file) and the in-browser SQL page, then README.
+    summary = build_site(cfg, target, load_mode=load.mode, rows_loaded=load.rows, synthetic=use_fixture,
+                         boundaries=boundaries)  # fmt: skip
+    meta = explore.export(cfg.db_path, cfg.site_dir / "data", target / "manifest.json")
+    runtime = explore.copy_runtime(cfg.vendor_dir, cfg.site_dir)
+    explore.write_page(cfg.site_dir, meta, summary["data_as_of"][:10], runtime, cfg.repo_url, use_fixture)
+    summary["browser_sql"] = {"tables": len(meta), "runtime": runtime,
+                              "megabytes": round(sum(m["bytes"] for m in meta) / 1e6, 1)}  # fmt: skip
+    (cfg.site_dir / "results.json").write_text(json.dumps(summary, indent=2, default=str))
     if not use_fixture:
         update_readme(cfg.readme_path, summary)
     log.info("Done in %.0fs. Site: %s", time.time() - t0, cfg.site_dir / "index.html")
@@ -101,7 +111,9 @@ def main() -> None:
         tmp = Path(os.environ.get("C311_FIXTURE_DIR", "/tmp/c311-fixture")).resolve()
         if tmp.exists():
             shutil.rmtree(tmp)
-        cfg = replace(cfg, db_path=tmp / "warehouse.duckdb", site_dir=tmp / "site")
+        cfg = replace(
+            cfg, db_path=tmp / "warehouse.duckdb", site_dir=tmp / "site", map_path=tmp / "map.geojson"
+        )
         dbt_vars = {"min_area_requests": 5}
     run(cfg, use_fixture=args.fixture, full_refresh=args.full_refresh, dbt_vars=dbt_vars)
 

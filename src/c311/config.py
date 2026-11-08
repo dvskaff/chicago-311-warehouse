@@ -33,6 +33,11 @@ class Config:
     dbt_dir: Path = field(default_factory=lambda: ROOT / "dbt")
     site_dir: Path = field(default_factory=lambda: _path("C311_SITE_DIR", ROOT / "site"))
     readme_path: Path = field(default_factory=lambda: ROOT / "README.md")
+    # committed map file (GitHub renders GeoJSON as a map) and the browser SQL runtime fetched from npm
+    map_path: Path = field(
+        default_factory=lambda: _path("C311_MAP_PATH", ROOT / "maps" / "community_area_service_index.geojson")
+    )
+    vendor_dir: Path = field(default_factory=lambda: _path("C311_VENDOR_DIR", ROOT / "web" / "vendor"))
 
     repo_url: str = "https://github.com/dvskaff/chicago-311-warehouse"
     site_url: str = "https://dvskaff.github.io/chicago-311-warehouse/"
