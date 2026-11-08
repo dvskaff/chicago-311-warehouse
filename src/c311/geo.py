@@ -177,7 +177,9 @@ def feature_collection(boundaries: pd.DataFrame, areas: pd.DataFrame, as_of: str
             "data_through": as_of,
             "fill": color(idx if has else None), "fill-opacity": 0.75, "stroke": "#ffffff", "stroke-width": 1,
         }  # fmt: skip
-        feats.append({"type": "Feature", "properties": props, "geometry": simplify(json.loads(r.geometry))})
+        feats.append(
+            {"type": "Feature", "properties": props, "geometry": rewind_rfc(simplify(json.loads(r.geometry)))}
+        )
     return {"type": "FeatureCollection", "features": feats}
 
 
@@ -185,21 +187,29 @@ def _area(ring) -> float:
     return sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in zip(ring, ring[1:], strict=False)) / 2
 
 
-def rewind_for_d3(geom: dict) -> dict:
-    """Plotly's geo maps (d3-geo) need outer rings clockwise and holes counter-clockwise, the reverse of the
-    GeoJSON standard; with the wrong order a polygon is read as "everything except this area" and disappears."""
-
+def _rewind(geom: dict, outer_clockwise: bool) -> dict:
     def poly(rings):
         out = []
         for k, r in enumerate(rings):
-            clockwise = _area(r) < 0
-            want_clockwise = k == 0
-            out.append(r if clockwise == want_clockwise else r[::-1])
+            want_clockwise = outer_clockwise if k == 0 else not outer_clockwise
+            out.append(r if (_area(r) < 0) == want_clockwise else r[::-1])
         return out
 
     if geom["type"] == "Polygon":
         return {"type": "Polygon", "coordinates": poly(geom["coordinates"])}
     return {"type": "MultiPolygon", "coordinates": [poly(p) for p in geom["coordinates"]]}
+
+
+def rewind_rfc(geom: dict) -> dict:
+    """The GeoJSON standard (RFC 7946 right-hand rule): outer rings counter-clockwise, holes clockwise. The city's
+    file uses the opposite order, which GitHub's map viewer rejects."""
+    return _rewind(geom, outer_clockwise=False)
+
+
+def rewind_for_d3(geom: dict) -> dict:
+    """Plotly's geo maps (d3-geo) need outer rings clockwise and holes counter-clockwise, the reverse of the
+    GeoJSON standard; with the wrong order a polygon is read as "everything except this area" and disappears."""
+    return _rewind(geom, outer_clockwise=True)
 
 
 def fig_map(fc: dict):

@@ -133,7 +133,7 @@ def copy_runtime(vendor: Path, site: Path) -> bool:
 # --------------------------------------------------------------------------- page
 PAGE_CSS = """
 .sqlgrid { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:16px; }
-@media (max-width: 900px) { .sqlgrid { grid-template-columns:1fr; } }
+@media (max-width: 900px) { .sqlgrid { grid-template-columns:minmax(0,1fr); } }
 textarea#sql { width:100%; min-height:190px; font:13.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   padding:10px 12px; border:1px solid #c3c2b7; border-radius:10px; background:#fff; resize:vertical; }
 .bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:8px 0 10px; }
@@ -218,6 +218,8 @@ async function init() {{
   }});
   const db = new duckdb.AsyncDuckDB(new duckdb.VoidLogger(), new Worker(bundle.mainWorker));
   await db.instantiate(bundle.mainModule);
+  // DECIMAL results (e.g. 1.5, sums of integers) come back from Arrow unscaled unless cast to double
+  await db.open({{ query: {{ castDecimalToDouble: true }} }});
   conn = await db.connect();
   const meta = await (await fetch("data/tables.json")).json();
   for (const t of meta.tables) {{

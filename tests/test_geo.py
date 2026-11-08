@@ -54,6 +54,10 @@ def test_rewind_for_d3_makes_outer_rings_clockwise_and_holes_counterclockwise():
     assert geo._area(r[0]) < 0 and geo._area(r[1]) > 0
     m = geo.rewind_for_d3({"type": "MultiPolygon", "coordinates": [[outer]]})["coordinates"]
     assert geo._area(m[0][0]) < 0
+    back = geo.rewind_rfc({"type": "MultiPolygon", "coordinates": [r]})["coordinates"][
+        0
+    ]  # the standard order again
+    assert geo._area(back[0]) > 0 and geo._area(back[1]) < 0
 
 
 def test_colors_diverge_around_one():
@@ -64,8 +68,12 @@ def test_colors_diverge_around_one():
 
 
 def test_feature_collection_and_choropleth():
+    clockwise = {
+        "type": "Polygon",
+        "coordinates": [_square()["coordinates"][0][::-1]],
+    }  # as the city's file has it
     boundaries = pd.DataFrame(
-        {"community_area_id": [1, 2], "geometry": [json.dumps(_square()), json.dumps(_square())]}
+        {"community_area_id": [1, 2], "geometry": [json.dumps(_square()), json.dumps(clockwise)]}
     )
     areas = AREAS.assign(service_index=[0.8, None, 1.1], median_days_to_close=[2.0, None, 3.5],
                          pct_closed_within_7d=[0.9, None, 0.7], closed_requests=[1200, 0, 900])  # fmt: skip
@@ -84,3 +92,4 @@ def test_feature_collection_and_choropleth():
     assert (
         fc["features"][0]["geometry"]["coordinates"][0] == _square()["coordinates"][0]
     )  # the file keeps RFC order
+    assert all(geo._area(f["geometry"]["coordinates"][0]) > 0 for f in fc["features"])  # and fixes the city's
