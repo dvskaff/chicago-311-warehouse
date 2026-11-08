@@ -5,10 +5,10 @@
 ![dbt](https://img.shields.io/badge/dbt-1.12-orange) ![DuckDB](https://img.shields.io/badge/DuckDB-2.0-yellow)
 ![Python](https://img.shields.io/badge/python-3.13-blue)
 
-**Live dashboard: https://dvskaff.github.io/chicago-311-warehouse/** ·
-**Query it in your browser: https://dvskaff.github.io/chicago-311-warehouse/sql.html** ·
-**dbt docs & lineage: https://dvskaff.github.io/chicago-311-warehouse/dbt-docs/** ·
-**Map: [`maps/community_area_service_index.geojson`](maps/community_area_service_index.geojson)**
+* **Dashboard:** [live results, updated daily](https://dvskaff.github.io/chicago-311-warehouse/)
+* **SQL:** [query the warehouse in your browser](https://dvskaff.github.io/chicago-311-warehouse/sql.html)
+* **Docs:** [dbt documentation and lineage graph](https://dvskaff.github.io/chicago-311-warehouse/dbt-docs/)
+* **Map:** [service speed by neighborhood](maps/community_area_service_index.geojson)
 
 An end-to-end analytics engineering project on real city data. Every day a GitHub Action pulls new and updated
 311 service requests (potholes, rats, street lights, graffiti...) from the City of Chicago's open-data API, loads
@@ -47,7 +47,7 @@ _Service work only: duplicates, information-only calls and 5 request types the c
 
 **Neighborhood equity:** across 77 community areas, the slowest is West Garfield Park, where requests take 1.44× the typical time to close for the same request types; the fastest is Armour Square at 0.65×.
 
-**Latest run:** 16 dbt models, 71 data tests and 3 unit tests: 72 passed, 2 warnings, 0 failed · source freshness: pass · 2026-11-08 18:04 UTC
+**Latest run:** 16 dbt models, 71 data tests and 3 unit tests: 72 passed, 2 warnings, 0 failed · source freshness: pass · 2026-11-08 17:11 UTC
 <!-- RESULTS:END -->
 
 ## Explore it yourself
