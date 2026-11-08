@@ -671,7 +671,7 @@ week to close), compared with the 12 months before. "Open now" counts every unre
 <p>The 15 most common request types in the same 12-month window.</p>
 {types_table(data["types"])}</section>
 
-<section><h2>Is service equally fast in every neighborhood?</h2>
+<section id="map"><h2>Is service equally fast in every neighborhood?</h2>
 <p>Raw medians would mislead, because neighborhoods file different kinds of requests. Each closed request is
 compared with the citywide median for its own request type; a community area's <b>service index</b> is the
 median of those ratios. 1.00 means a typical request there closes as fast as the citywide typical request of
