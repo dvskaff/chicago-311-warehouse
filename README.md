@@ -23,31 +23,31 @@ them into a DuckDB warehouse, rebuilds a tested dbt star schema, and republishes
 Rewritten automatically after every daily run.
 
 <!-- RESULTS:START -->
-_Data through Nov 26, 2026 · requests created Nov 20, 2025 – Nov 19, 2026 · 4,975,051 requests in the warehouse_
+_Data through Nov 27, 2026 · requests created Nov 21, 2025 – Nov 20, 2026 · 4,977,178 requests in the warehouse_
 
 | Metric | Last 12 months | vs. prior 12 months |
 |---|---|---|
-| Service requests | 813,724 | +12.8% |
+| Service requests | 813,697 | +12.8% |
 | Median time to close | 3.0 days | |
 | Closed within 7 days | 56.3% | -2.7 pts |
-| Open right now | 144,369 (123,324 older than 30 days) | |
+| Open right now | 143,696 (123,477 older than 30 days) | |
 
-_Service work only: duplicates, information-only calls and 5 request types the city closes on receipt (520,029 requests in the window, e.g. complaints that are only logged) are excluded from these metrics._
+_Service work only: duplicates, information-only calls and 5 request types the city closes on receipt (519,927 requests in the window, e.g. complaints that are only logged) are excluded from these metrics._
 
 | Department | Requests | Median days to close | Closed within 7 days | Open now |
 |---|---|---|---|---|
-| Streets and Sanitation | 484,750 | 2.9 | 59% | 62,808 |
-| CDOT - Department of Transportation | 163,678 | 3.1 | 56% | 31,732 |
-| DWM - Department of Water Management | 65,235 | 1.7 | 49% | 36,044 |
-| DOB - Buildings | 42,016 | 22.1 | 22% | 10,653 |
-| Animal Care and Control | 23,757 | 0.9 | 82% | 574 |
-| Outside Agencies | 13,493 | 0.1 | 91% | 498 |
-| BACP - Business Affairs and Consumer Protection | 11,956 | 27.0 | 21% | 1,837 |
-| City Clerk's Office | 4,586 | 3.8 | 69% | 43 |
+| Streets and Sanitation | 484,825 | 2.9 | 59% | 62,145 |
+| CDOT - Department of Transportation | 163,620 | 3.1 | 56% | 31,675 |
+| DWM - Department of Water Management | 65,231 | 1.7 | 49% | 36,063 |
+| DOB - Buildings | 42,035 | 22.1 | 22% | 10,657 |
+| Animal Care and Control | 23,721 | 0.9 | 82% | 580 |
+| Outside Agencies | 13,463 | 0.1 | 91% | 501 |
+| BACP - Business Affairs and Consumer Protection | 11,964 | 27.0 | 21% | 1,851 |
+| City Clerk's Office | 4,586 | 3.8 | 69% | 47 |
 
-**Neighborhood equity:** across 77 community areas, the slowest is West Garfield Park, where requests take 1.43× the typical time to close for the same request types; the fastest is Armour Square at 0.67×.
+**Neighborhood equity:** across 77 community areas, the slowest is East Garfield Park, where requests take 1.43× the typical time to close for the same request types; the fastest is Armour Square at 0.67×.
 
-**Latest run:** 16 dbt models, 71 data tests and 3 unit tests: 72 passed, 2 warnings, 0 failed · source freshness: pass · 2026-11-26 20:19 UTC
+**Latest run:** 16 dbt models, 71 data tests and 3 unit tests: 72 passed, 2 warnings, 0 failed · source freshness: pass · 2026-11-27 20:06 UTC
 <!-- RESULTS:END -->
 
 ## Explore it yourself
